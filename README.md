@@ -134,6 +134,10 @@ which machine built it.
     (`--install-tools`).
 - **Root/Admin only for `--disk`:** Administrator on Windows, `root` (`sudo`) on Linux.
   `--image` needs no elevation.
+- **A good USB drive matters.** Use a fast **USB 3.x** drive, not a cheap USB-2.0 thumb
+  drive: the UDM Pro's port runs at USB 2.0, but a USB 3.x drive is built to sustain the
+  overlay's constant writes far better, while USB-2.0-only sticks are slow and wear up.
+  Best of all is a small **(~20 GB) mSATA SSD in a USB enclosure**.
 - About 6 GB of scratch space for the build.
 - Network access for the firmware download (or supply a local `.bin`).
 
