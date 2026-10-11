@@ -155,9 +155,11 @@ WantedBy=multi-user.target
 
 
 def text_input(prompt):
-    """input() that exits cleanly on Ctrl+C or closed stdin and drops a stray UTF-8 BOM."""
+    """Print the prompt, flush it, then read; exit cleanly on Ctrl+C or closed stdin."""
     try:
-        s = _raw_input(prompt)
+        sys.stdout.write(prompt)
+        sys.stdout.flush()
+        s = _raw_input()
     except (EOFError, KeyboardInterrupt):
         print("")
         sys.exit("Cancelled; nothing was written.")
@@ -854,21 +856,20 @@ def guard_paths(d, paths):
             die("%s is on the disk being erased; use --workdir/--tools-dir on another disk" % p)
 
 
-def confirm_disk(d, typed=None):
+def confirm_disk(d, assume_yes=False):
     print("\n=== TARGET ===\n" + describe(d))
     for p in disk_partitions(d):
         print("   partition %s  %s  %.2f GiB  %s" % (
             p["num"], p["label"] or "-", gib(p["size"]), p["mount"] or "unmounted"))
     print("EVERYTHING on this disk will be destroyed.")
+    if assume_yes:
+        print(">>> --yes given: writing without a typed confirmation.")
+        return
     serial = d["serial"]
     want = serial or "DISK %s" % d["id"]
-    if typed is None:
-        print(">>> Waiting for your input on the next line (the erase starts only after it matches).")
-        text = text_input("Type %s to confirm: " % (("this disk's serial number (%s)" % serial) if serial
-                                                   else "'%s' (no serial available)" % want))
-    else:
-        text = typed
-        print(">>> --yes given, confirming with '%s'" % text)
+    print(">>> Waiting for your input on the next line (nothing is written until it matches).")
+    text = text_input("Type %s to confirm: " % (("this disk's serial number (%s)" % serial) if serial
+                                               else "'%s' (no serial available)" % want))
     if text.strip().lower() != want.lower():
         die("confirmation did not match; nothing was written")
 
@@ -1044,7 +1045,7 @@ def parse_args():
     a("--selftest", action="store_true", help="run offline self-checks and exit")
     a("--disk", help="ERASE and build: a Windows disk number, or a Linux device path (e.g. /dev/sdX)")
     a("--image", help="build into this disk-image file instead of a real disk (for testing)")
-    a("--yes", metavar="SERIAL", help="non-interactive write: pass the disk's serial (or 'DISK <id>') and skip the confirm prompt")
+    a("-y", "--yes", action="store_true", help="skip the confirmation prompt and write (no serial to type)")
     a("--firmware", default=DEFAULT_FW, help="firmware https URL or local .bin (default: UDM Pro 6.0.11)")
     a("--list-firmware", action="store_true", help="list confirmed-working firmware versions and exit")
     a("--recovery", help="raw FIT image for the recovery partition (default: the firmware's kernel FIT)")

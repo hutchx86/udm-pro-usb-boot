@@ -120,7 +120,8 @@ which machine built it.
 - **Independent verifier** — `verify_image.py` re-parses the GPT, runs `e2fsck` and
   hash-compares payloads without trusting the builder.
 - **Disk safety** — refuses non-USB, system/boot, wrong-sector-size and wrong-size disks;
-  re-reads the disk before wiping; you must type the disk's serial.
+  re-reads the disk before wiping; by default you must type the disk's serial (`-y`/`--yes`
+  skips that prompt).
 - **Guided or scripted** — an interactive wizard, or a full flag surface for automation.
 
 ## Requirements
@@ -202,6 +203,7 @@ All flags are also shown by `--help`.
 | `--selftest` | — | Run the offline self-checks and exit |
 | `--disk ID` | — | **Erase** and build: a Windows disk number, or a Linux device node (e.g. `/dev/sdX`) |
 | `--image FILE` | — | Build into a disk image instead of a real disk |
+| `-y`, `--yes` | off | Skip the confirmation prompt and write (no serial to type) |
 | `--firmware URL\|FILE` | UDM Pro 6.0.11 URL | Firmware source (any version; see `--list-firmware`) |
 | `--list-firmware` | — | List confirmed-working firmware versions and exit |
 | `--recovery FILE` / `--zero-recovery` | firmware kernel FIT | Recovery partition source |
