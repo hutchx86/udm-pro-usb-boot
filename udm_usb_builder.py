@@ -234,6 +234,8 @@ def download(url, dest):
     curl = which("curl")
     if curl:     # Windows' curl.exe speaks modern TLS; Python 2.7's OpenSSL does not
         rc = subprocess.call([curl, "-fL", "--retry", "3", "--connect-timeout", "30", "-o", part, url])
+        sys.stderr.write("\n")           # curl's progress meter leaves the cursor mid-line
+        sys.stderr.flush()
         if rc:
             die("download failed (curl exit %d). Check the connection/proxy, or pass a local .bin "
                 "with --firmware." % rc)
@@ -858,17 +860,23 @@ def guard_paths(d, paths):
 
 
 def confirm_disk(d, yes=False, ask=False):
-    print("\n=== TARGET ===\n" + describe(d))
+    print("\n=== TARGET ===")
+    for label, val in (("id", str(d["id"])), ("name", d["name"] or "?"),
+                       ("size", "%.2f GiB" % gib(d["size"])), ("bus", d["bus"] or "?"),
+                       ("serial", d["serial"] or "(none)"), ("style", d["style"] or "(unknown)")):
+        print("  %-7s %s" % (label + ":", val))
     for p in disk_partitions(d):
-        print("   partition %s  %s  %.2f GiB  %s" % (
+        print("  partition %s: %s  %.2f GiB  %s" % (
             p["num"], p["label"] or "-", gib(p["size"]), p["mount"] or "unmounted"))
     print("EVERYTHING on this disk will be destroyed.")
+    sys.stdout.flush()
     if ask:
         serial = d["serial"]
         want = serial or "DISK %s" % d["id"]
-        print(">>> Type the disk's serial to confirm (nothing is written until it matches).")
-        text = text_input("Type %s to confirm: " % (("this disk's serial number (%s)" % serial) if serial
-                                                   else "'%s' (no serial available)" % want))
+        print(">>> Confirm the target disk - type this exactly, then press Enter:")
+        print("      %s" % want)
+        sys.stdout.flush()
+        text = text_input("  > ")
         if text.strip().lower() != want.lower():
             die("confirmation did not match; nothing was written")
         return
@@ -876,16 +884,13 @@ def confirm_disk(d, yes=False, ask=False):
         print(">>> --yes given: writing now.")
         return
     print(">>> Writing in %d seconds - press Ctrl+C to abort." % CONFIRM_SECONDS)
+    sys.stdout.flush()
     try:
-        for i in range(CONFIRM_SECONDS, 0, -1):
-            sys.stdout.write("\r    %2d s " % i)
-            sys.stdout.flush()
-            time.sleep(1)
-        sys.stdout.write("\r    writing ...\n")
-        sys.stdout.flush()
+        time.sleep(CONFIRM_SECONDS)
     except KeyboardInterrupt:
         print("")
         die("aborted; nothing was written")
+    print(">>> writing ...")
 
 
 def wipe_table(d):
