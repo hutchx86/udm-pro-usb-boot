@@ -1,0 +1,32 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # gitleaks/gitleaks-action@v2 builds the range '<root-commit>^..<head>' on a repository's
+      # first push; the root commit has no parent, so `git log` fails and the scan aborts with
+      # exit 1. Scan the full history directly instead (same gitleaks version the action uses).
+      - name: Scan the full history for secrets
+        run: |
+          set -euo pipefail
+          ver=8.24.3
+          curl -sfL "https://github.com/gitleaks/gitleaks/releases/download/v${ver}/gitleaks_${ver}_linux_x64.tar.gz" \
+            | tar -xz -C /tmp gitleaks
+          /tmp/gitleaks detect --source . --redact --verbose --exit-code 1
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Byte-compile
+        run: python -m py_compile udm_usb_builder.py verify_image.py
+      - name: Offline self-test
+        run: python udm_usb_builder.py --selftest

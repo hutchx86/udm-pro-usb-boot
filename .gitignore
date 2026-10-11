@@ -1,0 +1,24 @@
+# Firmware, disk images and build output (never commit)
+*.bin
+*.img
+*.fit
+firmware.bin
+work/
+tools/
+verify_work/
+test.img
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Secrets / local
+.env
+*.key
+*.pem
+
+# editor / OS noise
+*.swp
+.DS_Store
+*:Zone.Identifier

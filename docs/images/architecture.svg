@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="580" viewBox="0 0 880 580" font-family="sans-serif" role="img" aria-label="Data path from the official firmware .bin through the builder to a USB stick and a UDM Pro boot">
+  <rect width="880" height="580" fill="#ffffff"/>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 z" fill="#57606a"/>
+    </marker>
+  </defs>
+
+  <!-- Input: firmware -->
+  <rect x="130" y="24" width="620" height="66" rx="8" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="440" y="50" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2328">Official UDM Pro firmware .bin</text>
+  <text x="440" y="72" text-anchor="middle" font-size="12" fill="#57606a">UBNT container &#8212; kernel FIT (uImage) + squashfs rootfs</text>
+  <line x1="440" y1="90" x2="440" y2="118" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Builder -->
+  <rect x="130" y="120" width="620" height="82" rx="8" fill="#fff8c5" stroke="#d4a72c"/>
+  <text x="440" y="146" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2328">udm_usb_builder.py</text>
+  <text x="440" y="167" text-anchor="middle" font-size="12" fill="#57606a">cut the payloads &#8594; five ext4 images + a raw recovery blob (e2fsprogs)</text>
+  <text x="440" y="185" text-anchor="middle" font-size="12" fill="#57606a">&#8594; build the stock GPT, primary + backup</text>
+  <line x1="440" y1="202" x2="440" y2="230" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Write -->
+  <rect x="130" y="232" width="620" height="74" rx="8" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="440" y="258" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2328">Write to a USB stick (--disk) or a disk image (--image)</text>
+  <text x="440" y="280" text-anchor="middle" font-size="12" fill="#57606a">14.56 GiB stock layout &#8212; then read everything back and verify SHA-1</text>
+  <line x1="440" y1="306" x2="440" y2="334" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Partition strip -->
+  <text x="130" y="329" font-size="11" fill="#8c959f">partition strip (not to scale)</text>
+  <g font-size="12.5" font-weight="600" fill="#1f2328" text-anchor="middle">
+    <rect x="130" y="336" width="100" height="58" rx="6" fill="#eef2f6" stroke="#d0d7de"/>
+    <text x="180" y="360">boot</text>
+    <rect x="234" y="336" width="100" height="58" rx="6" fill="#eef2f6" stroke="#d0d7de"/>
+    <text x="284" y="360">recovery</text>
+    <rect x="338" y="336" width="100" height="58" rx="6" fill="#eef2f6" stroke="#d0d7de"/>
+    <text x="388" y="360">root</text>
+    <rect x="442" y="336" width="100" height="58" rx="6" fill="#eef2f6" stroke="#d0d7de"/>
+    <text x="492" y="360">log</text>
+    <rect x="546" y="336" width="100" height="58" rx="6" fill="#eef2f6" stroke="#d0d7de"/>
+    <text x="596" y="360">persistent</text>
+    <rect x="650" y="336" width="100" height="58" rx="6" fill="#eef2f6" stroke="#d0d7de"/>
+    <text x="700" y="360">overlay</text>
+  </g>
+  <g font-size="10.5" fill="#57606a" text-anchor="middle">
+    <text x="180" y="380">64 MiB</text>
+    <text x="284" y="380">32 MiB</text>
+    <text x="388" y="380">2 GiB</text>
+    <text x="492" y="380">1 GiB</text>
+    <text x="596" y="380">2 GiB</text>
+    <text x="700" y="380">9692 MiB</text>
+  </g>
+  <line x1="440" y1="394" x2="440" y2="422" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Device -->
+  <rect x="130" y="424" width="620" height="92" rx="8" fill="#ddf4ff" stroke="#54aeff"/>
+  <text x="440" y="450" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2328">UDM Pro boots from the stick (expected)</text>
+  <text x="440" y="472" text-anchor="middle" font-size="12" fill="#57606a">U-Boot ext4loads uImage from 'boot'; the squashfs rootfs loop-mounts from 'root'</text>
+  <text x="440" y="492" text-anchor="middle" font-size="12" fill="#57606a">the /persistent shim recreates the /dev/boot* names the updater expects</text>
+
+  <text x="440" y="548" text-anchor="middle" font-size="11.5" fill="#57606a">verify_image.py re-parses the GPT, e2fsck-checks every filesystem and hash-compares the payloads &#8212; independent of the builder</text>
+</svg>

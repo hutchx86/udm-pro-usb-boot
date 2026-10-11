@@ -1,0 +1,12 @@
+[Unit]
+Description=Create /dev/boot* compatibility links for the firmware updater
+After=local-fs.target systemd-udevd.service
+ConditionPathExists=/persistent/udm-boot-shim/udm-boot-links.sh
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh /persistent/udm-boot-shim/udm-boot-links.sh
+
+[Install]
+WantedBy=multi-user.target
