@@ -10,7 +10,8 @@
 Steps: download the firmware and cut out the kernel FIT and squashfs rootfs; build the partition
 images with e2fsprogs (a private Cygwin copy is offered on Windows if missing); write them at the stock
 sector offsets, then the GPT, and read everything back; install the /dev/boot* shim.
-Safety: only USB, non-system, 512-byte-sector disks of 14.6-128 GiB, and you type the disk's serial.
+Safety: only USB, non-system, 512-byte-sector disks of 14.6-128 GiB; the target is shown and there
+is a short abort window before writing (--ask to require typing the serial).
 Runs on Windows and Linux. Writing a real disk needs Administrator on Windows or root on Linux:
 --disk N (Windows) or --disk /dev/sdX (Linux). --image touches no hardware and works on either.
 The layout is the stock 14.56 GiB one; the rest of a larger stick is left unallocated.
@@ -856,22 +857,35 @@ def guard_paths(d, paths):
             die("%s is on the disk being erased; use --workdir/--tools-dir on another disk" % p)
 
 
-def confirm_disk(d, assume_yes=False):
+def confirm_disk(d, yes=False, ask=False):
     print("\n=== TARGET ===\n" + describe(d))
     for p in disk_partitions(d):
         print("   partition %s  %s  %.2f GiB  %s" % (
             p["num"], p["label"] or "-", gib(p["size"]), p["mount"] or "unmounted"))
     print("EVERYTHING on this disk will be destroyed.")
-    if assume_yes:
-        print(">>> --yes given: writing without a typed confirmation.")
+    if ask:
+        serial = d["serial"]
+        want = serial or "DISK %s" % d["id"]
+        print(">>> Type the disk's serial to confirm (nothing is written until it matches).")
+        text = text_input("Type %s to confirm: " % (("this disk's serial number (%s)" % serial) if serial
+                                                   else "'%s' (no serial available)" % want))
+        if text.strip().lower() != want.lower():
+            die("confirmation did not match; nothing was written")
         return
-    serial = d["serial"]
-    want = serial or "DISK %s" % d["id"]
-    print(">>> Waiting for your input on the next line (nothing is written until it matches).")
-    text = text_input("Type %s to confirm: " % (("this disk's serial number (%s)" % serial) if serial
-                                               else "'%s' (no serial available)" % want))
-    if text.strip().lower() != want.lower():
-        die("confirmation did not match; nothing was written")
+    if yes:
+        print(">>> --yes given: writing now.")
+        return
+    print(">>> Writing in %d seconds - press Ctrl+C to abort." % CONFIRM_SECONDS)
+    try:
+        for i in range(CONFIRM_SECONDS, 0, -1):
+            sys.stdout.write("\r    %2d s " % i)
+            sys.stdout.flush()
+            time.sleep(1)
+        sys.stdout.write("\r    writing ...\n")
+        sys.stdout.flush()
+    except KeyboardInterrupt:
+        print("")
+        die("aborted; nothing was written")
 
 
 def wipe_table(d):
@@ -946,6 +960,7 @@ DISCLAIMER = """
   than 14.56 GiB stay blocked even in override mode.
   You are solely responsible for choosing the right disk and for any data loss.
 """
+CONFIRM_SECONDS = 10
 
 
 def print_table(disks, args):
@@ -1045,7 +1060,8 @@ def parse_args():
     a("--selftest", action="store_true", help="run offline self-checks and exit")
     a("--disk", help="ERASE and build: a Windows disk number, or a Linux device path (e.g. /dev/sdX)")
     a("--image", help="build into this disk-image file instead of a real disk (for testing)")
-    a("-y", "--yes", action="store_true", help="skip the confirmation prompt and write (no serial to type)")
+    a("-y", "--yes", action="store_true", help="write immediately, without the confirmation delay")
+    a("--ask", action="store_true", help="require the disk's serial to be typed before writing")
     a("--firmware", default=DEFAULT_FW, help="firmware https URL or local .bin (default: UDM Pro 6.0.11)")
     a("--list-firmware", action="store_true", help="list confirmed-working firmware versions and exit")
     a("--recovery", help="raw FIT image for the recovery partition (default: the firmware's kernel FIT)")
@@ -1179,7 +1195,7 @@ def main():
 
         if disk:
             disk = refetch(disk, args)
-            confirm_disk(disk, args.yes)
+            confirm_disk(disk, args.yes, args.ask)
             disk = refetch(disk, args)
             print("Preparing disk (removing existing partitions) ...")
             wipe_table(disk)

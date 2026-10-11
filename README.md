@@ -120,8 +120,8 @@ which machine built it.
 - **Independent verifier** — `verify_image.py` re-parses the GPT, runs `e2fsck` and
   hash-compares payloads without trusting the builder.
 - **Disk safety** — refuses non-USB, system/boot, wrong-sector-size and wrong-size disks;
-  re-reads the disk before wiping; by default you must type the disk's serial (`-y`/`--yes`
-  skips that prompt).
+  re-reads the disk before wiping; shows the target and waits 10 s before wiping (`Ctrl+C`
+  aborts, `-y`/`--yes` skips the wait, `--ask` requires typing the serial).
 - **Guided or scripted** — an interactive wizard, or a full flag surface for automation.
 
 ## Requirements
@@ -188,9 +188,9 @@ python udm_usb_builder.py --disk <N>                 # Windows: the disk number 
 sudo python3 udm_usb_builder.py --disk /dev/sdX      # Linux: the device node from --list
 ```
 
-The stick is erased after you type its serial number (or, when a disk reports no serial, its
-id). On a machine without the tool's write path, build an image with `--image` and write it
-with `dd`.
+Before writing, the tool prints the target disk and waits 10 seconds — press `Ctrl+C` to
+abort, or `-y`/`--yes` to skip the wait, or `--ask` to require typing the disk's serial. On a
+machine without the tool's write path, build an image with `--image` and write it with `dd`.
 
 ## Configuration
 
@@ -203,7 +203,8 @@ All flags are also shown by `--help`.
 | `--selftest` | — | Run the offline self-checks and exit |
 | `--disk ID` | — | **Erase** and build: a Windows disk number, or a Linux device node (e.g. `/dev/sdX`) |
 | `--image FILE` | — | Build into a disk image instead of a real disk |
-| `-y`, `--yes` | off | Skip the confirmation prompt and write (no serial to type) |
+| `-y`, `--yes` | off | Write immediately, without the confirmation delay |
+| `--ask` | off | Require the disk's serial to be typed before writing |
 | `--firmware URL\|FILE` | UDM Pro 6.0.11 URL | Firmware source (any version; see `--list-firmware`) |
 | `--list-firmware` | — | List confirmed-working firmware versions and exit |
 | `--recovery FILE` / `--zero-recovery` | firmware kernel FIT | Recovery partition source |
