@@ -17,6 +17,13 @@ firmware updater hard-codes.**
 > It is a proof of concept, though a stick it built has booted a real UDM Pro. Read
 > [Roadmap / known limitations](#roadmap--known-limitations) before touching hardware.
 
+> [!IMPORTANT]
+> This is a **hardware-repair** project, not a software-only mod. It targets UDM Pro units
+> whose internal eMMC storage has failed: the dead **eMMC and its controller are removed from
+> the board and a USB breakout is soldered in their place**, after which the UDM Pro boots from
+> an ordinary USB stick. This tool only builds that stick — it is not a supported Ubiquiti
+> procedure; see the Disclaimer below.
+
 > [!NOTE]
 > Not affiliated with Ubiquiti Inc. No Ubiquiti firmware or binaries are distributed here —
 > the builder downloads the official `.bin` from Ubiquiti's public firmware endpoint, or
@@ -288,6 +295,14 @@ No third-party code is vendored; `e2fsprogs` is invoked at runtime, not bundled.
 
 <details>
 <summary><b>Disclaimer</b></summary>
+
+**Intended use — repair of a physically modified board.** This project exists to get a UniFi
+Dream Machine Pro whose **internal eMMC storage has failed** working again. That repair is
+physical: the dead **eMMC and its controller are removed from the board and a USB breakout is
+soldered in their place**, after which the UDM Pro boots from an ordinary USB stick. This tool
+only builds that stick. It is **not** a supported Ubiquiti procedure, the modification
+**voids the warranty**, and **a botched rework can destroy the unit** — do it only on hardware
+you own and are willing to lose.
 
 **This is a proof-of-concept project, not a production-ready system.** Large parts were
 produced with LLMs under human supervision and testing — review and verify everything
