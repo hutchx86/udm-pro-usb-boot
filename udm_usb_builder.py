@@ -854,7 +854,7 @@ def guard_paths(d, paths):
             die("%s is on the disk being erased; use --workdir/--tools-dir on another disk" % p)
 
 
-def confirm_disk(d):
+def confirm_disk(d, typed=None):
     print("\n=== TARGET ===\n" + describe(d))
     for p in disk_partitions(d):
         print("   partition %s  %s  %.2f GiB  %s" % (
@@ -862,9 +862,14 @@ def confirm_disk(d):
     print("EVERYTHING on this disk will be destroyed.")
     serial = d["serial"]
     want = serial or "DISK %s" % d["id"]
-    ans = text_input("Type %s to confirm: " % (("this disk's serial number (%s)" % serial) if serial
-                                              else "'%s' (no serial available)" % want)).strip()
-    if ans.lower() != want.lower():
+    if typed is None:
+        print(">>> Waiting for your input on the next line (the erase starts only after it matches).")
+        text = text_input("Type %s to confirm: " % (("this disk's serial number (%s)" % serial) if serial
+                                                   else "'%s' (no serial available)" % want))
+    else:
+        text = typed
+        print(">>> --yes given, confirming with '%s'" % text)
+    if text.strip().lower() != want.lower():
         die("confirmation did not match; nothing was written")
 
 
@@ -1039,6 +1044,7 @@ def parse_args():
     a("--selftest", action="store_true", help="run offline self-checks and exit")
     a("--disk", help="ERASE and build: a Windows disk number, or a Linux device path (e.g. /dev/sdX)")
     a("--image", help="build into this disk-image file instead of a real disk (for testing)")
+    a("--yes", metavar="SERIAL", help="non-interactive write: pass the disk's serial (or 'DISK <id>') and skip the confirm prompt")
     a("--firmware", default=DEFAULT_FW, help="firmware https URL or local .bin (default: UDM Pro 6.0.11)")
     a("--list-firmware", action="store_true", help="list confirmed-working firmware versions and exit")
     a("--recovery", help="raw FIT image for the recovery partition (default: the firmware's kernel FIT)")
@@ -1172,7 +1178,7 @@ def main():
 
         if disk:
             disk = refetch(disk, args)
-            confirm_disk(disk)
+            confirm_disk(disk, args.yes)
             disk = refetch(disk, args)
             print("Preparing disk (removing existing partitions) ...")
             wipe_table(disk)
