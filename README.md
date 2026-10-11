@@ -14,9 +14,8 @@ firmware updater hard-codes.**
 
 > [!WARNING]
 > This tool **erases a whole disk** — the wrong disk destroys all of its data permanently.
-> It is a proof of concept: the image build is verified end to end, but the **raw-disk write
-> path and booting a real UDM Pro from the result have not been independently verified**.
-> Read [Roadmap / known limitations](#roadmap--known-limitations) before touching hardware.
+> It is a proof of concept, though a stick it built has booted a real UDM Pro. Read
+> [Roadmap / known limitations](#roadmap--known-limitations) before touching hardware.
 
 > [!NOTE]
 > Not affiliated with Ubiquiti Inc. No Ubiquiti firmware or binaries are distributed here —
@@ -50,7 +49,7 @@ python udm_usb_builder.py
 | **Host platforms** | Windows (PowerShell), Linux (`lsblk`/`wipefs`) |
 | **Protocol / interface** | Raw block device + GPT; UBNT firmware container; ext4 / squashfs / FIT; systemd shim |
 | **Language** | Python 3 (Python 2.7 also supported) |
-| **Status** | Proof of concept — image build verified end to end; raw-disk write and on-device boot not independently verified |
+| **Status** | Working on real hardware — a stick built by this tool has booted a UDM Pro |
 | **License** | AGPL-3.0 |
 
 ## How it compares
@@ -93,7 +92,7 @@ which machine built it.
 
 | Model | SoC / variant | Status | Notes |
 | --- | --- | --- | --- |
-| UniFi Dream Machine Pro (UDM Pro) | AL324 (Annapurna Labs), sysid `ea15` | Expected | Layout, payload hashes and shim derived from live UDM Pro 6.0.11 dumps; boot not tested on hardware |
+| UniFi Dream Machine Pro (UDM Pro) | AL324 (Annapurna Labs), sysid `ea15` | Verified | A stick built by this tool booted a UDM Pro; layout, payload hashes and shim derived from live 6.0.11 dumps |
 
 ## Features
 
@@ -218,8 +217,9 @@ All flags are also shown by `--help`.
   confirmed version — the payloads equal to the hashes below.
 - **Platforms:** the Linux build + verify (real 6.0.11 firmware, every check passing) was run
   here; the Windows path was not re-run in this workspace.
-- **Not yet run:** `--disk` against real hardware, and boot of the resulting stick on a
-  UDM Pro.
+- **On hardware:** a USB stick built by this tool booted a real UDM Pro. That build used an
+  earlier revision; the current revision has not been re-run to boot since the Windows/Linux
+  refactor.
 
 `--list-firmware` prints the confirmed-working list. Confirmed so far:
 
@@ -229,9 +229,9 @@ All flags are also shown by `--help`.
 
 ## Roadmap / known limitations
 
-- **Known:** the raw-disk write path (`--disk`) has not been independently verified on either
-  platform, and no attempt has been reported to boot a UDM Pro from the result. Only the
-  image build is verified end to end here.
+- **Known:** booting a UDM Pro from a stick this tool built is confirmed on hardware (earlier
+  revision); the current revision's raw-disk `--disk` path has not been re-run on hardware
+  since the Windows/Linux refactor.
 - **Known:** the recovery partition is written from the *firmware's own kernel FIT*, inferred
   from strings in the updater ("Failed to update recovery kernel", "Failed to copy kernel
   partition to recovery partition"). The `.bin` contains no recovery section — override with

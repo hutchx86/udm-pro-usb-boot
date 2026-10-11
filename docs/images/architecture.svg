@@ -53,7 +53,7 @@
 
   <!-- Device -->
   <rect x="130" y="424" width="620" height="92" rx="8" fill="#ddf4ff" stroke="#54aeff"/>
-  <text x="440" y="450" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2328">UDM Pro boots from the stick (expected)</text>
+  <text x="440" y="450" text-anchor="middle" font-size="15" font-weight="600" fill="#1f2328">UDM Pro boots from the stick</text>
   <text x="440" y="472" text-anchor="middle" font-size="12" fill="#57606a">U-Boot ext4loads uImage from 'boot'; the squashfs rootfs loop-mounts from 'root'</text>
   <text x="440" y="492" text-anchor="middle" font-size="12" fill="#57606a">the /persistent shim recreates the /dev/boot* names the updater expects</text>
 
