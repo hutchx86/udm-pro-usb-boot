@@ -239,6 +239,9 @@ All flags are also shown by `--help`.
 - **Known:** the layout and shim are proven only for 6.0.11 / sysid `ea15`. Other versions
   build without any override, but are not hash-verified (no confirmed entry) — the structural
   checks (FIT / squashfs magic, `bytes_used`, 4096-alignment) still run.
+- **Known:** a disk that reports neither a serial nor a WWN has no unique identity, so a
+  same-model swap between `--list` and the write cannot be detected; the confirmation then
+  falls back to typing the device path.
 - **Planned:** a `blkdiscard` before partitioning on Linux, and a re-run of the Windows write
   path into the test matrix.
 

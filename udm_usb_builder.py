@@ -24,6 +24,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import struct
 import subprocess
 import sys
@@ -502,6 +503,9 @@ def build_images(tools, work, uimage, rootfs, recovery, with_shim):
 class Target(object):
     def __init__(self, path, size=None):
         if size:
+            if os.path.exists(path) and (stat.S_ISBLK(os.stat(path).st_mode)
+                                         or stat.S_ISCHR(os.stat(path).st_mode)):
+                raise IOError("%s is a device, not a file" % path)
             make_sparse(path, size)
         self.f = open(path, "r+b", 0)
 
@@ -688,6 +692,12 @@ def _list_disks_linux():
         dev = _pick(disk, "path") or ("/dev/" + (_pick(disk, "name") or ""))
         if not dev or dev == "/dev/":
             continue
+        serial = (_pick(disk, "serial") or "").strip()
+        wwn = ""
+        if not serial:                           # some sticks expose only a WWN
+            rc, out, _ = run_out([bin_of("lsblk"), "-no", "WWN", dev])
+            if rc == 0 and out.strip():
+                wwn = out.strip().splitlines()[0].strip()
         extra = []
         if mounts:
             extra.append("mounted at %s" % mounts[0])
@@ -698,7 +708,7 @@ def _list_disks_linux():
         disks.append({
             "id": dev,
             "name": (_pick(disk, "model") or os.path.basename(dev) or "?").strip(),
-            "serial": (_pick(disk, "serial") or "").strip(),
+            "serial": serial,
             "size": int(_pick(disk, "size") or 0),
             "bus": (_pick(disk, "tran") or "").upper() or "?",
             "sector": int(_pick(disk, "log-sec") or 0),
@@ -706,8 +716,8 @@ def _list_disks_linux():
             "dev": dev,
             "system": system_disk in (dev, _parent_disk(dev)),
             "readonly": _truthy(_pick(disk, "ro")),
-            "unique": "%s|%s|%s" % (_pick(disk, "serial") or "", _pick(disk, "size") or "",
-                                    _pick(disk, "path") or ""),
+            "unique": "%s|%s|%s|%s" % (serial, wwn, _pick(disk, "size") or "",
+                                       _pick(disk, "path") or ""),
             "_extra": extra,
         })
     return disks
@@ -719,27 +729,38 @@ def list_disks():
 
 # ---- shared -----------------------------------------------------------------
 def _mount_source(path):
-    """The block device backing the filesystem that holds `path` (walks up to an existing parent)."""
-    if not which("findmnt"):
+    """The block device backing the filesystem that holds `path` (longest /proc/mounts prefix)."""
+    if IS_WINDOWS:
         return None
-    p = os.path.abspath(path)
-    for _ in range(64):
-        rc, out, _ = run_out([bin_of("findmnt"), "-no", "SOURCE", "-T", p])
-        if rc == 0 and out.strip():
-            return out.strip().splitlines()[0].strip()
-        parent = os.path.dirname(p)
-        if parent == p:
-            return None
-        p = parent
-    return None
+    target = os.path.realpath(path)
+    best_mnt, best_dev = "", None
+    try:
+        with open("/proc/mounts") as f:
+            for line in f:
+                parts = line.split()
+                if len(parts) < 2:
+                    continue
+                dev, mnt = parts[0], parts[1]
+                if (target == mnt or target.startswith(mnt.rstrip("/") + "/")) and len(mnt) > len(best_mnt):
+                    best_mnt, best_dev = mnt, dev
+    except IOError:
+        return None
+    return best_dev
 
 
 def _parent_disk(dev):
+    """Walk PKNAME up to the top-level whole disk (handles md/nested devices)."""
     if not dev:
         return None
-    rc, out, _ = run_out([bin_of("lsblk"), "-no", "PKNAME", dev])
-    name = out.strip().splitlines()[0].strip() if rc == 0 and out.strip() else ""
-    return "/dev/" + name if name else dev
+    seen = set()
+    while dev and dev not in seen:
+        seen.add(dev)
+        rc, out, _ = run_out([bin_of("lsblk"), "-no", "PKNAME", dev])
+        name = out.strip().splitlines()[0].strip() if rc == 0 and out.strip() else ""
+        if not name:
+            break
+        dev = "/dev/" + name
+    return dev
 
 
 def visible(disks, args):
@@ -763,8 +784,8 @@ def disk_problems(d, args):
         p.append("disk is read-only (a write-protect switch?)")
     if d["bus"] != "USB" and not args.allow_non_usb:
         p.append("bus type is %s, not USB (override: --allow-non-usb)" % (d["bus"] or "?"))
-    if d["sector"] and d["sector"] != SECTOR:
-        p.append("logical sector size is %s, need %d" % (d["sector"], SECTOR))
+    if d["sector"] != SECTOR:
+        p.append("logical sector size is %s, need %d" % (d["sector"] or "unknown", SECTOR))
     if d["size"] // SECTOR < MIN_DISK_SECTORS:
         p.append("too small: %d bytes, layout needs %d" % (d["size"], MIN_DISK_SECTORS * SECTOR))
     if d["size"] > MAX_DISK_BYTES and not args.allow_large:
@@ -1035,8 +1056,18 @@ def parse_args():
         ap.error("--disk and --image are mutually exclusive")
     if args.interactive and args.image:
         ap.error("--interactive cannot be combined with --image")
-    if args.image and args.image.startswith(("\\\\.", "\\\\?")):
-        ap.error("--image must be a file path, not a device path")
+    if args.image:
+        if args.image.startswith(("\\\\.", "\\\\?")):
+            ap.error("--image must be a file path, not a device path")
+        if not IS_WINDOWS and os.path.abspath(args.image).startswith("/dev/"):
+            ap.error("--image must be a regular file, not a device: %s" % args.image)
+        if os.path.exists(args.image):
+            try:
+                st = os.stat(args.image)
+            except OSError:
+                st = None
+            if st is not None and (stat.S_ISBLK(st.st_mode) or stat.S_ISCHR(st.st_mode)):
+                ap.error("--image must be a regular file, not a device: %s" % args.image)
     if args.disk is not None:
         s = str(args.disk)
         if IS_WINDOWS:
